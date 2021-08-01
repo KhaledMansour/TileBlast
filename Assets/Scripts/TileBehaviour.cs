@@ -9,6 +9,7 @@ public class TileBehaviour : MonoBehaviour
 	public int yIndex;
 	public GameObject tileItem;
 	public TileColor tileColor;
+	public TileCategory tileCategory;
 	public List<TileBehaviour> matchedNeighbours;
 	public bool isVisited;
 	public TileState tileState;
@@ -24,9 +25,7 @@ public class TileBehaviour : MonoBehaviour
 		this.tileItem = tileItem;
 		this.tileColor = tileColor;
 		this.onDestoryAction = onDestoryAction;
-		matchedNeighbours = new List<TileBehaviour> ();
-		parentIndex = new Vector2 (-1, -1);
-		tileState = TileState.None;
+		ResetTileProps ();
 	}
 
 	public void ReInitTileAfterMoving(int xindex, int yIndex, Vector3 targetCellPos)
@@ -40,7 +39,6 @@ public class TileBehaviour : MonoBehaviour
 		}
 		enumerable =  MoveToCell (targetCellPos);
 		StartCoroutine (enumerable);
-		//transform.position = targetCellPos;
 	}
 
 	public void ResetTileProps()
@@ -48,9 +46,11 @@ public class TileBehaviour : MonoBehaviour
 		tileState = TileState.None;
 		parentIndex = new Vector2 (-1, -1);
 		isVisited = false;
+		tileCategory = TileCategory.Default;
 		matchedNeighbours.Clear ();
 		childsObeservers.Clear ();
 	}
+
 	public void CheckForNeighbours()
 	{
 		if (isVisited)
@@ -167,5 +167,4 @@ public class TileBehaviour : MonoBehaviour
 		}
 		transform.position = pos;
 	}
-
 } 

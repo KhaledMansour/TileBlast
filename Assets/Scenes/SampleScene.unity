@@ -147,7 +147,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 76926066}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 6, z: 0}
+  m_LocalPosition: {x: 0, y: 2, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -268,22 +268,10 @@ MonoBehaviour:
   screenHeight: 8
   columnItemsCount: 8
   rowItemsCount: 5
-  SpawnPoint: {fileID: 76926066}
+  spawnPoint: {fileID: 76926067}
   yOffsetPercentage: 30
   blockPrefab: {fileID: 1893394054500374816, guid: 005dad584b6c73f49822fbaba24c12f1, type: 3}
-  tilesMap:
-  - tileSprite: {fileID: -4624011131410558117, guid: 4d3c70be506135545b873f72ca57d487, type: 3}
-    TileColor: 0
-  - tileSprite: {fileID: -7364823422338184377, guid: 7a7f8a1f4acd1534ca5e20b3b39d7024, type: 3}
-    TileColor: 1
-  - tileSprite: {fileID: 742919511911846744, guid: ab94e281089d1ff44a0d585c39f03d20, type: 3}
-    TileColor: 2
-  - tileSprite: {fileID: 8161472552560778960, guid: 5a68f141b8d29ea4dbbbe89e80c8d487, type: 3}
-    TileColor: 3
-  - tileSprite: {fileID: 887387325851772620, guid: 52b4c76337b963d4787f09c3634fa0bf, type: 3}
-    TileColor: 4
-  - tileSprite: {fileID: 7985042018138347892, guid: f7825f81d3444a840bc849a31bb262b4, type: 3}
-    TileColor: 5
+  assetCategory: {fileID: 11400000, guid: 50616d1f0159ab74eaa179274624ae7a, type: 2}
   allTiles: []
 --- !u!4 &147712465
 Transform:

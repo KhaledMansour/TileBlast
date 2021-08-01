@@ -100,6 +100,7 @@ MonoBehaviour:
   yIndex: 0
   tileItem: {fileID: 0}
   tileColor: 0
+  tileCategory: 0
   matchedNeighbours: []
   isVisited: 0
   tileState: 0
@@ -129,5 +130,5 @@ BoxCollider2D:
     adaptiveTiling: 0
   m_AutoTiling: 0
   serializedVersion: 2
-  m_Size: {x: 1, y: 1}
+  m_Size: {x: 1.1, y: 1}
   m_EdgeRadius: 0
