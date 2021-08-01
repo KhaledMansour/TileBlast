@@ -111,6 +111,26 @@ public class TileMap
 	public Sprite tileSprite;
 	public TileColor TileColor;
 }
+
+public class BoardCell
+{
+	public TileBehaviour tileBehaviour;
+	public int xIndex;
+	public int yIndex;
+	public Vector2 cellPosition;
+	public BoardCell(TileBehaviour tileBehaviour, int xIndex, int yIndex, Vector2 cellPosition)
+	{
+		this.tileBehaviour = tileBehaviour;
+		this.xIndex = xIndex;
+		this.yIndex = yIndex;
+		this.cellPosition = cellPosition;
+	}
+
+	public void UpdateCellTile(TileBehaviour tileBehaviour)
+	{
+		this.tileBehaviour = tileBehaviour;
+	}
+}
 public class GameGridHandler : MonoBehaviour
 {
 	[SerializeField]
@@ -121,6 +141,8 @@ public class GameGridHandler : MonoBehaviour
 	private int columnItemsCount;
 	[SerializeField]
 	private int rowItemsCount;
+	[SerializeField]
+	private GameObject SpawnPoint;
 	private static float xOffsetPercentage = 10;
 	[SerializeField]
 	private float yOffsetPercentage = 10;
@@ -128,13 +150,12 @@ public class GameGridHandler : MonoBehaviour
 	private GameObject blockPrefab;
 	[SerializeField]
 	List<TileMap> tilesMap;
-	public static TileBehaviour[,] gameBoard;
+	public static BoardCell[,] gameBoard;
 	public List<TileBehaviour> allTiles;
 
 	void Awake()
 	{
 		InitTilesGrid ();
-
 	}
 
 	void Update()
@@ -150,7 +171,7 @@ public class GameGridHandler : MonoBehaviour
 		//screenHeight = Camera.main.orthographicSize * 2;
 		//screenWidth = screenHeight * Screen.width / Screen.height;
 		//screenHeight = 7;
-		gameBoard = new TileBehaviour[rowItemsCount, columnItemsCount];
+		gameBoard = new BoardCell[rowItemsCount, columnItemsCount];
 		var xItemSize = screenWidth / (rowItemsCount + (rowItemsCount + 1) / xOffsetPercentage);
 		var yItemSize = screenHeight / (columnItemsCount + (columnItemsCount + 1) / yOffsetPercentage);
 		var startXPos = -screenWidth / 2 + xItemSize / 2 + xItemSize / xOffsetPercentage;
@@ -169,14 +190,15 @@ public class GameGridHandler : MonoBehaviour
 				var yPos = (y * yItemSize + y * (yItemSize / yOffsetPercentage) + startYPos);
 				tileObject.transform.position = new Vector3 (xPos, yPos, 0);
 				var tile = tileObject.GetComponent<TileBehaviour>();
-				tile.InitTile (x, y, tileObject, randomTileRef.TileColor);
-				gameBoard[x, y] = tile;
+				tile.InitTile (x, y, tileObject, randomTileRef.TileColor, OnTileDestroyed);
 				allTiles.Add (tile);
 				tileObject.name = randomTileRef.TileColor.ToString ()+ x + "" + y;
+				var cell = new BoardCell (tile, x, y, new Vector2(xPos, yPos));
+				gameBoard[x, y] = cell;
 			}
 		}
 		//Debug.LogError (gameBoard[2, 2].GetNeighboursIndexes ());
-		//CheckMatches ();
+		CheckMatches ();
 	}
 
 	void CheckMatches()
@@ -185,8 +207,52 @@ public class GameGridHandler : MonoBehaviour
 		{
 			for (int x = 0; x < rowItemsCount; x++)
 			{
-				gameBoard[x, y].CheckForNeighbours ();
+				if (gameBoard[x, y].tileBehaviour)
+				{
+					gameBoard[x, y].tileBehaviour.ResetTileProps ();
+				}
 			}
 		}
+		for (int y = 0; y < columnItemsCount; y++)
+		{
+			for (int x = 0; x < rowItemsCount; x++)
+			{
+				if (gameBoard[x, y].tileBehaviour)
+				{
+					gameBoard[x, y].tileBehaviour.CheckForNeighbours ();
+				}
+			}
+		}
+
+
+	}
+
+	void OnTileDestroyed(List<TileBehaviour> tiles)
+	{
+		foreach (var tile in tiles)
+		{
+			var destroyedTileCell = gameBoard[tile.xIndex, tile.yIndex];
+			Destroy (destroyedTileCell.tileBehaviour.gameObject);
+			destroyedTileCell.tileBehaviour = null;
+			for (int y = destroyedTileCell.yIndex + 1; y < columnItemsCount; y++)
+			{
+				var upperCell = gameBoard[tile.xIndex, y];
+				if (upperCell.tileBehaviour != null)
+				{
+					for (int height = 0; height < y; height++)
+					{
+						var lowercell = gameBoard[tile.xIndex, height];
+						if (lowercell.tileBehaviour == null)
+						{
+							lowercell.tileBehaviour = upperCell.tileBehaviour;
+							upperCell.tileBehaviour = null;
+							lowercell.tileBehaviour.ReInitTileAfterMoving ( lowercell.xIndex, lowercell.yIndex, lowercell.cellPosition);
+							//break;
+						}
+					}
+				}
+			}
+		}
+		CheckMatches ();
 	}
 }
