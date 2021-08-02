@@ -150,11 +150,14 @@ public class GameGridHandler : MonoBehaviour
 			for (int x = 0; x < rowItemsCount; x++)
 			{
 
-				var xPos = (x * xItemSize + x * (xItemSize / xOffsetPercentage) + startXPos);
-				var yPos = (y * yItemSize + y * (yItemSize / yOffsetPercentage) + startYPos);
-				var tile = SpawnRandomTile (new Vector3 (xPos, yPos, 0), x, y);
-				var cell = new BoardCell (tile, x, y, new Vector2 (xPos, yPos));
+				var cellXPos = (x * xItemSize + x * (xItemSize / xOffsetPercentage) + startXPos);
+				var cellYPos = (y * yItemSize + y * (yItemSize / yOffsetPercentage) + startYPos);
+				var tilePos = new Vector3 (cellXPos, spawnPoint.localPosition.y + tileScale.y * y, 0);
+
+				var tile = SpawnRandomTile (tilePos, x, y);
+				var cell = new BoardCell (tile, x, y, new Vector2 (cellXPos, cellYPos));
 				gameBoard[x, y] = cell;
+				tile.InitTile (cell);
 			}
 		}
 		CheckTileMatches ();
@@ -208,7 +211,7 @@ public class GameGridHandler : MonoBehaviour
 						{
 							lowercell.tileBehaviour = upperCell.tileBehaviour;
 							upperCell.tileBehaviour = null;
-							lowercell.tileBehaviour.ReInitTileAfterMoving (lowercell);
+							lowercell.tileBehaviour.InitTile (lowercell);
 						}
 					}
 				}
@@ -223,14 +226,16 @@ public class GameGridHandler : MonoBehaviour
 		for (int i = 0; i < destroyedItemsRow.Count; i++)
 		{
 			var rowIndex = destroyedItemsRow[i];
+			var numberOfSpawnsInColumn = 0;
 			for (int y = 0; y < columnItemsCount; y++)
 			{
 				var cell = gameBoard[rowIndex, y];
 				if (!cell.tileBehaviour)
 				{
-					var tilePos = new Vector3 (cell.cellPosition.x, spawnPoint.localPosition.y + tileScale.y * y, 0);
+					numberOfSpawnsInColumn++;
+					var tilePos = new Vector3 (cell.cellPosition.x, spawnPoint.localPosition.y + tileScale.y * numberOfSpawnsInColumn, 0);
 					var tile = SpawnRandomTile (tilePos, cell.xIndex, cell.yIndex);
-					tile.ReInitTileAfterMoving (cell);
+					tile.InitTile (cell);
 					cell.tileBehaviour = tile;
 				}
 			}

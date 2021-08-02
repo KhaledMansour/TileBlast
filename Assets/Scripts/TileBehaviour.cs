@@ -17,7 +17,7 @@ public class TileBehaviour : MonoBehaviour
 	private float movingTime = 3f;
 	private Action<List<TileBehaviour>> onDestoryAction;
 	private Func<TileColor, TileCategory,Sprite> getTileSprite;
-	private IEnumerator enumerable;
+	private IEnumerator moveEnumerable;
 	private SpriteRenderer spriteRenderer;
 	public void InitTile(int xIndex, int yIndex, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Func<TileColor, TileCategory, Sprite> getTileSprite)
 	{
@@ -30,17 +30,17 @@ public class TileBehaviour : MonoBehaviour
 		ResetTileProps ();
 	}
 
-	public void ReInitTileAfterMoving(BoardCell cell)
+	public void InitTile(BoardCell cell)
 	{
 		this.xIndex = cell.xIndex;
 		this.yIndex = cell.yIndex;
 		ResetTileProps ();
-		if (enumerable != null)
+		if (moveEnumerable != null)
 		{
-			StopCoroutine (enumerable);
+			StopCoroutine (moveEnumerable);
 		}
-		enumerable =  MoveToCell (cell.cellPosition);
-		StartCoroutine (enumerable);
+		moveEnumerable =  MoveToCell (cell.cellPosition);
+		StartCoroutine (moveEnumerable);
 	}
 
 	public void ResetTileProps()
@@ -117,6 +117,7 @@ public class TileBehaviour : MonoBehaviour
 		this.tileCategory = tileCategory;
 		UpdateTileSprite ();
 	}
+
 	public List<Vector2> GetNeighboursIndexes()
 	{
 		var result = new List<Vector2> ();
@@ -141,7 +142,6 @@ public class TileBehaviour : MonoBehaviour
 
 	private void OnMouseDown()
 	{
-		Debug.LogError (name);
 		OnClickOnTile ();
 	}
 
