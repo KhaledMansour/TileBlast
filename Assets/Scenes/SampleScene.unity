@@ -283,12 +283,19 @@ MonoBehaviour:
     GroupAStartLimit: 5
     GroupBStartLimit: 7
     GroupCStartLimit: 9
-  levelType: 0
+  - levelType: 2
+    columnItemsCount: 4
+    rowItemsCount: 4
+    maxColorsCount: 6
+    GroupAStartLimit: 5
+    GroupBStartLimit: 7
+    GroupCStartLimit: 9
+  levelType: 1
   spawnPoint: {fileID: 76926067}
+  xOffsetPercentage: 40
   yOffsetPercentage: 30
   blockPrefab: {fileID: 1893394054500374816, guid: 005dad584b6c73f49822fbaba24c12f1, type: 3}
   assetCategory: {fileID: 11400000, guid: 50616d1f0159ab74eaa179274624ae7a, type: 2}
-  allTiles: []
 --- !u!4 &147712465
 Transform:
   m_ObjectHideFlags: 0

@@ -7,7 +7,6 @@ public class TileBehaviour : MonoBehaviour
 {
 	public int xIndex;
 	public int yIndex;
-	public GameObject tileItem;
 	public TileColor tileColor;
 	public TileCategory tileCategory;
 	public List<TileBehaviour> matchedNeighbours;
@@ -15,16 +14,15 @@ public class TileBehaviour : MonoBehaviour
 	public TileState tileState;
 	public Vector2 parentIndex;
 	public List<TileBehaviour> childsObeservers;
-	private float movingTime = 5f;
+	private float movingTime = 3f;
 	private Action<List<TileBehaviour>> onDestoryAction;
 	private Func<TileColor, TileCategory,Sprite> getTileSprite;
 	private IEnumerator enumerable;
 	private SpriteRenderer spriteRenderer;
-	public void InitTile(int xIndex, int yIndex, GameObject tileItem, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Func<TileColor, TileCategory, Sprite> getTileSprite)
+	public void InitTile(int xIndex, int yIndex, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Func<TileColor, TileCategory, Sprite> getTileSprite)
 	{
 		this.xIndex = xIndex;
 		this.yIndex = yIndex;
-		this.tileItem = tileItem;
 		this.tileColor = tileColor;
 		this.onDestoryAction = onDestoryAction;
 		this.getTileSprite = getTileSprite;
@@ -32,16 +30,16 @@ public class TileBehaviour : MonoBehaviour
 		ResetTileProps ();
 	}
 
-	public void ReInitTileAfterMoving(int xindex, int yIndex, Vector3 targetCellPos)
+	public void ReInitTileAfterMoving(BoardCell cell)
 	{
-		this.xIndex = xindex;
-		this.yIndex = yIndex;
+		this.xIndex = cell.xIndex;
+		this.yIndex = cell.yIndex;
 		ResetTileProps ();
 		if (enumerable != null)
 		{
 			StopCoroutine (enumerable);
 		}
-		enumerable =  MoveToCell (targetCellPos);
+		enumerable =  MoveToCell (cell.cellPosition);
 		StartCoroutine (enumerable);
 	}
 
@@ -50,7 +48,7 @@ public class TileBehaviour : MonoBehaviour
 		tileState = TileState.None;
 		parentIndex = new Vector2 (-1, -1);
 		isVisited = false;
-		tileCategory = TileCategory.Default;
+		UpdateTileCategory (TileCategory.Default);
 		matchedNeighbours.Clear ();
 		childsObeservers.Clear ();
 	}
@@ -108,13 +106,17 @@ public class TileBehaviour : MonoBehaviour
 		if (tileState == TileState.Parent)
 		{
 			var tileCategory = GameGridHandler.currentLevelProps.GetTileCategory (childsObeservers.Count + 1);
-			var tileSprite = getTileSprite (tileColor, tileCategory);
-			childsObeservers.ForEach (x => x.UpdateTileSprite (tileSprite));
-			UpdateTileSprite (tileSprite);
+			UpdateTileCategory (tileCategory);
+			childsObeservers.ForEach (x => x.UpdateTileCategory (tileCategory));
 		}
 		isVisited = true;
 	}
 
+	private void UpdateTileCategory(TileCategory tileCategory)
+	{
+		this.tileCategory = tileCategory;
+		UpdateTileSprite ();
+	}
 	public List<Vector2> GetNeighboursIndexes()
 	{
 		var result = new List<Vector2> ();
@@ -175,8 +177,14 @@ public class TileBehaviour : MonoBehaviour
 		transform.position = pos;
 	}
 
-	public void UpdateTileSprite(Sprite sprite)
+	public void UpdateTileSprite()
 	{
-		spriteRenderer.sprite = sprite;
+		var tileSprite = getTileSprite (tileColor, tileCategory);
+		spriteRenderer.sprite = tileSprite;
+	}
+
+	public bool IfParentTile()
+	{
+		return tileState == TileState.Parent;
 	}
 } 

@@ -29,7 +29,7 @@ public class BoardCell
 [System.Serializable]
 public enum LevelType
 {
-	Example1, Example2
+	Example1, Example2, ShuffleTest
 }
 [System.Serializable]
 public class LevelProps
@@ -37,6 +37,7 @@ public class LevelProps
 	public LevelType levelType;
 	public int columnItemsCount;
 	public int rowItemsCount;
+	[Range (0, 6)]
 	public int maxColorsCount;
 	[SerializeField]
 	private int GroupAStartLimit;
@@ -82,7 +83,8 @@ public class GameGridHandler : MonoBehaviour
 	public static LevelProps currentLevelProps;
 	[SerializeField]
 	private Transform spawnPoint;
-	private static float xOffsetPercentage = 40;
+	[SerializeField]
+	private float xOffsetPercentage = 40;
 	[SerializeField]
 	private float yOffsetPercentage = 10;
 	[SerializeField]
@@ -90,7 +92,6 @@ public class GameGridHandler : MonoBehaviour
 	[SerializeField]
 	private AssetsLoader assetCategory;
 	public static BoardCell[,] gameBoard;
-	public List<TileBehaviour> allTiles;
 	private Vector3 tileScale;
 
 	void Awake()
@@ -105,10 +106,32 @@ public class GameGridHandler : MonoBehaviour
 	{
 		if (Input.GetKeyDown (KeyCode.M))
 		{
-			CheckMatches ();
+			CheckTileMatches ();
 		}
+		//if (Input.GetKeyDown (KeyCode.S))
+		//{
+		//	Debug.LogError ("need shuffle" + Shuffle ());
+		//}
 
 	}
+
+	//bool Shuffle()
+	//{
+	//	for (int y = 0; y < columnItemsCount; y++)
+	//	{
+	//		for (int x = 0; x < rowItemsCount; x++)
+	//		{
+	//			if (gameBoard[x, y].tileBehaviour)
+	//			{
+	//				if (gameBoard[x, y].tileBehaviour.IfParentTile())
+	//				{
+	//					return false;
+	//				}
+	//			}
+	//		}
+	//	}
+	//	return true;
+	//}
 
 	void InitTilesGrid()
 	{
@@ -126,26 +149,18 @@ public class GameGridHandler : MonoBehaviour
 		{
 			for (int x = 0; x < rowItemsCount; x++)
 			{
-				var randomTileRef = assetCategory.GetRandomTile ();
-				var tileDefaultSprite = randomTileRef.tileMaps.FirstOrDefault (x => x.tileCategory == TileCategory.Default).tileSprite;
-				var tileObject = Instantiate (blockPrefab, this.transform);
-				tileObject.transform.localScale = new Vector3 (xItemSize, yItemSize, 0);
+
 				var xPos = (x * xItemSize + x * (xItemSize / xOffsetPercentage) + startXPos);
 				var yPos = (y * yItemSize + y * (yItemSize / yOffsetPercentage) + startYPos);
-				tileObject.transform.position = new Vector3 (xPos, yPos, 0);
-				var tile = tileObject.GetComponent<TileBehaviour> ();
-				tile.InitTile (x, y, tileObject, randomTileRef.tileColor, OnTileDestroyed, assetCategory.GetTileSprite);
-				tile.UpdateTileSprite (tileDefaultSprite);
-				allTiles.Add (tile);
-				tileObject.name = randomTileRef.tileColor.ToString () + x + "" + y;
+				var tile = SpawnRandomTile (new Vector3 (xPos, yPos, 0), x, y);
 				var cell = new BoardCell (tile, x, y, new Vector2 (xPos, yPos));
 				gameBoard[x, y] = cell;
 			}
 		}
-		CheckMatches ();
+		CheckTileMatches ();
 	}
 
-	void CheckMatches()
+	private void CheckTileMatches()
 	{
 		for (int y = 0; y < columnItemsCount; y++)
 		{
@@ -183,24 +198,24 @@ public class GameGridHandler : MonoBehaviour
 			destroyedTileCell.tileBehaviour = null;
 			for (int y = destroyedTileCell.yIndex + 1; y < columnItemsCount; y++)
 			{
-				var upperCell = gameBoard[tile.xIndex, y];
+				var upperCell = gameBoard[destroyedTileCell.xIndex, y];
 				if (upperCell.tileBehaviour != null)
 				{
 					for (int height = 0; height < y; height++)
 					{
-						var lowercell = gameBoard[tile.xIndex, height];
+						var lowercell = gameBoard[destroyedTileCell.xIndex, height];
 						if (lowercell.tileBehaviour == null)
 						{
 							lowercell.tileBehaviour = upperCell.tileBehaviour;
 							upperCell.tileBehaviour = null;
-							lowercell.tileBehaviour.ReInitTileAfterMoving (lowercell.xIndex, lowercell.yIndex, lowercell.cellPosition);
+							lowercell.tileBehaviour.ReInitTileAfterMoving (lowercell);
 						}
 					}
 				}
 			}
 		}
 		SpawnTilesToFillEmptyCells (destroyedItemsRow);
-		CheckMatches ();
+		CheckTileMatches ();
 	}
 
 	private void SpawnTilesToFillEmptyCells(List<int> destroyedItemsRow)
@@ -213,20 +228,26 @@ public class GameGridHandler : MonoBehaviour
 				var cell = gameBoard[rowIndex, y];
 				if (!cell.tileBehaviour)
 				{
-					var randomTileRef = assetCategory.GetRandomTile ();
-					var tileDefaultSprite = randomTileRef.tileMaps.FirstOrDefault (x => x.tileCategory == TileCategory.Default).tileSprite;
-					var tileObject = Instantiate (blockPrefab, this.transform);
-					tileObject.GetComponent<SpriteRenderer> ().sprite = tileDefaultSprite;
-					tileObject.transform.localScale = tileScale;
-					tileObject.transform.position = new Vector3 (cell.cellPosition.x, spawnPoint.localPosition.y + tileScale.y * y, 0);
-					var tile = tileObject.GetComponent<TileBehaviour> ();
-					tile.InitTile (cell.xIndex, cell.yIndex, tileObject, randomTileRef.tileColor, OnTileDestroyed, assetCategory.GetTileSprite);
-					tile.ReInitTileAfterMoving (cell.xIndex, cell.yIndex, cell.cellPosition);
+					var tilePos = new Vector3 (cell.cellPosition.x, spawnPoint.localPosition.y + tileScale.y * y, 0);
+					var tile = SpawnRandomTile (tilePos, cell.xIndex, cell.yIndex);
+					tile.ReInitTileAfterMoving (cell);
 					cell.tileBehaviour = tile;
 				}
 			}
 		}
+	}
 
+	private TileBehaviour SpawnRandomTile(Vector3 pos, int cellXIndex, int cellYIndex)
+	{
+		var randomTileRef = assetCategory.GetRandomTile ();
+		var tileDefaultSprite = randomTileRef.tileMaps.FirstOrDefault (x => x.tileCategory == TileCategory.Default).tileSprite;
+		var tileObject = Instantiate (blockPrefab, this.transform);
+		tileObject.transform.localScale = tileScale;
+		tileObject.transform.position = pos;
+		var tile = tileObject.GetComponent<TileBehaviour> ();
+		tile.InitTile (cellXIndex, cellYIndex, randomTileRef.tileColor, OnTileDestroyed, assetCategory.GetTileSprite);
+		tileObject.name = randomTileRef.tileColor.ToString () + cellXIndex + "" + cellYIndex;
+		return tile;
 	}
 
 }
