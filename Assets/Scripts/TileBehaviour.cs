@@ -15,16 +15,20 @@ public class TileBehaviour : MonoBehaviour
 	public TileState tileState;
 	public Vector2 parentIndex;
 	public List<TileBehaviour> childsObeservers;
-	private float movingTime = 2f;
+	private float movingTime = 5f;
 	private Action<List<TileBehaviour>> onDestoryAction;
+	private Func<TileColor, TileCategory,Sprite> getTileSprite;
 	private IEnumerator enumerable;
-	public void InitTile(int xIndex, int yIndex, GameObject tileItem, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction)
+	private SpriteRenderer spriteRenderer;
+	public void InitTile(int xIndex, int yIndex, GameObject tileItem, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Func<TileColor, TileCategory, Sprite> getTileSprite)
 	{
 		this.xIndex = xIndex;
 		this.yIndex = yIndex;
 		this.tileItem = tileItem;
 		this.tileColor = tileColor;
 		this.onDestoryAction = onDestoryAction;
+		this.getTileSprite = getTileSprite;
+		spriteRenderer = GetComponent<SpriteRenderer> ();
 		ResetTileProps ();
 	}
 
@@ -101,10 +105,13 @@ public class TileBehaviour : MonoBehaviour
 				}
 			}
 		}
-		//if (tileState == TileState.Parent)
-		//{
-		//	Debug.LogError ("find" + childsObeservers.Count + "color" + this.name);
-		//}
+		if (tileState == TileState.Parent)
+		{
+			var tileCategory = GameGridHandler.currentLevelProps.GetTileCategory (childsObeservers.Count + 1);
+			var tileSprite = getTileSprite (tileColor, tileCategory);
+			childsObeservers.ForEach (x => x.UpdateTileSprite (tileSprite));
+			UpdateTileSprite (tileSprite);
+		}
 		isVisited = true;
 	}
 
@@ -115,7 +122,7 @@ public class TileBehaviour : MonoBehaviour
 		{
 			result.Add (new Vector2 (xIndex - 1, yIndex));
 		}
-		if (xIndex < 5 - 1)
+		if (xIndex < GameGridHandler.currentLevelProps.rowItemsCount - 1)
 		{
 			result.Add (new Vector2 (xIndex + 1, yIndex));
 		}
@@ -123,7 +130,7 @@ public class TileBehaviour : MonoBehaviour
 		{
 			result.Add (new Vector2 (xIndex, yIndex - 1));
 		}
-		if (yIndex < 8 - 1)
+		if (yIndex < GameGridHandler.currentLevelProps.columnItemsCount - 1)
 		{
 			result.Add (new Vector2 (xIndex, yIndex + 1));
 		}
@@ -166,5 +173,10 @@ public class TileBehaviour : MonoBehaviour
 			yield return null;
 		}
 		transform.position = pos;
+	}
+
+	public void UpdateTileSprite(Sprite sprite)
+	{
+		spriteRenderer.sprite = sprite;
 	}
 } 

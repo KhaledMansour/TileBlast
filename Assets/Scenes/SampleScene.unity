@@ -266,8 +266,24 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   screenWidth: 5.6
   screenHeight: 8
-  columnItemsCount: 8
-  rowItemsCount: 5
+  columnItemsCount: 0
+  rowItemsCount: 0
+  levelProps:
+  - levelType: 0
+    columnItemsCount: 12
+    rowItemsCount: 10
+    maxColorsCount: 6
+    GroupAStartLimit: 5
+    GroupBStartLimit: 8
+    GroupCStartLimit: 10
+  - levelType: 1
+    columnItemsCount: 8
+    rowItemsCount: 5
+    maxColorsCount: 4
+    GroupAStartLimit: 5
+    GroupBStartLimit: 7
+    GroupCStartLimit: 9
+  levelType: 0
   spawnPoint: {fileID: 76926067}
   yOffsetPercentage: 30
   blockPrefab: {fileID: 1893394054500374816, guid: 005dad584b6c73f49822fbaba24c12f1, type: 3}

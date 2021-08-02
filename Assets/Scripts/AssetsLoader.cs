@@ -27,7 +27,7 @@ public class AssetsLoader : ScriptableObject
 {
 	public List<TilesMapping> tilesMappings;
 
-	public Sprite GetTileSprite(TileColor tileColor, TileCategory tileCategory)
+	public  Sprite GetTileSprite(TileColor tileColor, TileCategory tileCategory)
 	{
 		var tileAsset = tilesMappings.FirstOrDefault (x => x.tileColor == tileColor);
 		if (tileAsset !=null)
@@ -42,7 +42,7 @@ public class AssetsLoader : ScriptableObject
 
 	public TilesMapping GetRandomTile()
 	{
-		var randomTile = Random.Range (0, tilesMappings.Count);
+		var randomTile = Random.Range (0, GameGridHandler.currentLevelProps.maxColorsCount);
 		return tilesMappings[randomTile];
 	}
 }
