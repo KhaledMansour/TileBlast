@@ -37,7 +37,7 @@ public class LevelProps
 	public LevelType levelType;
 	public int columnItemsCount;
 	public int rowItemsCount;
-	[Range (0, 6)]
+	[Range (1, 6)]
 	public int maxColorsCount;
 	[SerializeField]
 	private int GroupAStartLimit;
@@ -93,13 +93,45 @@ public class GameGridHandler : MonoBehaviour
 	private AssetsLoader assetCategory;
 	public static BoardCell[,] gameBoard;
 	private Vector3 tileScale;
+	private Dictionary<TileColor, List<TileBehaviour>> tilesColorsDict;
+	[SerializeField]
+	private List<TileBehaviour> currentMovingTilesObservers;
+	public static bool gameStateMoving { get;private set; }
 
 	void Awake()
 	{
+		//currentMovingTilesObservers = new List<TileBehaviour> ();
 		currentLevelProps = levelProps.First (x => x.levelType == levelType);
 		columnItemsCount = currentLevelProps.columnItemsCount;
 		rowItemsCount = currentLevelProps.rowItemsCount;
+		InitTilesColorsDict ();
 		InitTilesGrid ();
+	}
+
+	private void InitTilesColorsDict()
+	{
+		tilesColorsDict = new Dictionary<TileColor, List<TileBehaviour>> ();
+		for (int i = 0; i < currentLevelProps.maxColorsCount; i++)
+		{
+			tilesColorsDict.Add ((TileColor)i, new List<TileBehaviour> ());
+		}
+	}
+
+	private void AddTileToDict(TileBehaviour tileBehaviour)
+	{
+		var color = tileBehaviour.tileColor;
+		var tiles = tilesColorsDict[color];
+		if (!tiles.Contains (tileBehaviour))
+		{
+			tiles.Add (tileBehaviour);
+		}
+	}
+
+	private void RemoveTileFromDict(TileBehaviour tileBehaviour)
+	{
+		var color = tileBehaviour.tileColor;
+		var tiles = tilesColorsDict[color];
+		tiles.Remove (tileBehaviour);
 	}
 
 	void Update()
@@ -108,30 +140,58 @@ public class GameGridHandler : MonoBehaviour
 		{
 			CheckTileMatches ();
 		}
-		//if (Input.GetKeyDown (KeyCode.S))
-		//{
-		//	Debug.LogError ("need shuffle" + Shuffle ());
-		//}
-
+		if (Input.GetKeyDown (KeyCode.S))
+		{
+			//Debug.LogError ("need shuffle" + CheckNeedShuffle ());
+			ShuffleBehaviour ();
+		}
 	}
 
-	//bool Shuffle()
-	//{
-	//	for (int y = 0; y < columnItemsCount; y++)
-	//	{
-	//		for (int x = 0; x < rowItemsCount; x++)
-	//		{
-	//			if (gameBoard[x, y].tileBehaviour)
-	//			{
-	//				if (gameBoard[x, y].tileBehaviour.IfParentTile())
-	//				{
-	//					return false;
-	//				}
-	//			}
-	//		}
-	//	}
-	//	return true;
-	//}
+	bool CheckNeedShuffle()
+	{
+		for (int y = 0; y < columnItemsCount; y++)
+		{
+			for (int x = 0; x < rowItemsCount; x++)
+			{
+				if (gameBoard[x, y].tileBehaviour)
+				{
+					if (gameBoard[x, y].tileBehaviour.IfParentTile ())
+					{
+						return false;
+					}
+				}
+			}
+		}
+		return true;
+	}
+
+	private void ShuffleBehaviour()
+	{
+		for (int i = 0; i < tilesColorsDict.Count; i++)
+		{
+			var colorTiles = tilesColorsDict.ElementAt (i);
+			if (colorTiles.Value.Count > 1)
+			{
+				var tileNeighbourIndex = colorTiles.Value[0].GetNeighboursIndexes ()[0];
+				var neighbourCell = gameBoard[(int)tileNeighbourIndex.x, (int)tileNeighbourIndex.y];
+				var targetTile = colorTiles.Value[1];
+				var targetCell = gameBoard[(int)targetTile.xIndex, (int)targetTile.yIndex];
+				SwapCellsTile (neighbourCell, targetCell);
+			}
+		}
+		CheckTileMatches ();
+	}
+
+	private void SwapCellsTile(BoardCell cell1, BoardCell cell2)
+	{
+		var tile1 = cell1.tileBehaviour;
+		var tile2 = cell2.tileBehaviour;
+		var tile1Temp = tile1;
+		cell2.tileBehaviour = tile1Temp;
+		cell1.tileBehaviour = tile2;
+		tile2.InitTile (cell1);
+		tile1.InitTile (cell2);
+	}
 
 	void InitTilesGrid()
 	{
@@ -161,10 +221,15 @@ public class GameGridHandler : MonoBehaviour
 			}
 		}
 		CheckTileMatches ();
+		if (CheckNeedShuffle ())
+		{
+			ShuffleBehaviour ();
+		}
 	}
 
 	private void CheckTileMatches()
 	{
+
 		for (int y = 0; y < columnItemsCount; y++)
 		{
 			for (int x = 0; x < rowItemsCount; x++)
@@ -181,10 +246,11 @@ public class GameGridHandler : MonoBehaviour
 			{
 				if (gameBoard[x, y].tileBehaviour)
 				{
-					gameBoard[x, y].tileBehaviour.CheckForNeighbours ();
+					gameBoard[x, y].tileBehaviour.CheckNeighboursMatches ();
 				}
 			}
 		}
+
 	}
 
 	void OnTileDestroyed(List<TileBehaviour> tiles)
@@ -193,6 +259,7 @@ public class GameGridHandler : MonoBehaviour
 		foreach (var tile in tiles)
 		{
 			var destroyedTileCell = gameBoard[tile.xIndex, tile.yIndex];
+			RemoveTileFromDict (destroyedTileCell.tileBehaviour);
 			Destroy (destroyedTileCell.tileBehaviour.gameObject);
 			if (!destroyedItemsRow.Contains (destroyedTileCell.xIndex))
 			{
@@ -219,6 +286,10 @@ public class GameGridHandler : MonoBehaviour
 		}
 		SpawnTilesToFillEmptyCells (destroyedItemsRow);
 		CheckTileMatches ();
+		if (CheckNeedShuffle ())
+		{
+			ShuffleBehaviour ();
+		}
 	}
 
 	private void SpawnTilesToFillEmptyCells(List<int> destroyedItemsRow)
@@ -250,9 +321,34 @@ public class GameGridHandler : MonoBehaviour
 		tileObject.transform.localScale = tileScale;
 		tileObject.transform.position = pos;
 		var tile = tileObject.GetComponent<TileBehaviour> ();
-		tile.InitTile (cellXIndex, cellYIndex, randomTileRef.tileColor, OnTileDestroyed, assetCategory.GetTileSprite);
+		tile.InitTile (cellXIndex, cellYIndex, randomTileRef.tileColor, OnTileDestroyed, AddChildMovingObserver, RemoveChildMovingObserver, assetCategory.GetTileSprite);
 		tileObject.name = randomTileRef.tileColor.ToString () + cellXIndex + "" + cellYIndex;
+		AddTileToDict (tile);
 		return tile;
+	}
+
+	private void AddChildMovingObserver(TileBehaviour tileObserver)
+	{
+		if (!currentMovingTilesObservers.Contains (tileObserver))
+		{
+			gameStateMoving = true;
+			currentMovingTilesObservers.Add (tileObserver);
+		}
+	}
+
+	private void RemoveChildMovingObserver(TileBehaviour tileBehaviour)
+	{
+		currentMovingTilesObservers.Remove (tileBehaviour);
+		Debug.LogError (currentMovingTilesObservers.Count);
+		if (currentMovingTilesObservers.Count == 0)
+		{
+			gameStateMoving = false;
+			Debug.LogError ("check shuffle");
+			if (CheckNeedShuffle ())
+			{
+				ShuffleBehaviour ();
+			}
+		}
 	}
 
 }

@@ -16,15 +16,19 @@ public class TileBehaviour : MonoBehaviour
 	public List<TileBehaviour> childsObeservers;
 	private float movingTime = 3f;
 	private Action<List<TileBehaviour>> onDestoryAction;
-	private Func<TileColor, TileCategory,Sprite> getTileSprite;
+	private Func<TileColor, TileCategory, Sprite> getTileSprite;
+	private Action<TileBehaviour> notifyFinishMoving;
+	private Action<TileBehaviour> notifyStartMoving;
 	private IEnumerator moveEnumerable;
 	private SpriteRenderer spriteRenderer;
-	public void InitTile(int xIndex, int yIndex, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Func<TileColor, TileCategory, Sprite> getTileSprite)
+	public void InitTile(int xIndex, int yIndex, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Action<TileBehaviour> notifyStartMoving, Action<TileBehaviour> notifyFinishMoving, Func<TileColor, TileCategory, Sprite> getTileSprite)
 	{
 		this.xIndex = xIndex;
 		this.yIndex = yIndex;
 		this.tileColor = tileColor;
 		this.onDestoryAction = onDestoryAction;
+		this.notifyFinishMoving = notifyFinishMoving;
+		this.notifyStartMoving = notifyStartMoving;
 		this.getTileSprite = getTileSprite;
 		spriteRenderer = GetComponent<SpriteRenderer> ();
 		ResetTileProps ();
@@ -39,7 +43,7 @@ public class TileBehaviour : MonoBehaviour
 		{
 			StopCoroutine (moveEnumerable);
 		}
-		moveEnumerable =  MoveToCell (cell.cellPosition);
+		moveEnumerable = MoveToCell (cell.cellPosition);
 		StartCoroutine (moveEnumerable);
 	}
 
@@ -53,7 +57,7 @@ public class TileBehaviour : MonoBehaviour
 		childsObeservers.Clear ();
 	}
 
-	public void CheckForNeighbours()
+	public void CheckNeighboursMatches()
 	{
 		if (isVisited)
 		{
@@ -82,7 +86,7 @@ public class TileBehaviour : MonoBehaviour
 					if (!childsObeservers.Contains (tileElement))
 					{
 						childsObeservers.Add (tileElement);
-						tileElement.CheckForNeighbours ();
+						tileElement.CheckNeighboursMatches ();
 					}
 				}
 				else if (tileState != TileState.Parent)
@@ -98,7 +102,7 @@ public class TileBehaviour : MonoBehaviour
 					if (!parentTile.childsObeservers.Contains (tileElement))
 					{
 						parentTile.childsObeservers.Add (tileElement);
-						tileElement.CheckForNeighbours ();
+						tileElement.CheckNeighboursMatches ();
 					}
 				}
 			}
@@ -142,6 +146,10 @@ public class TileBehaviour : MonoBehaviour
 
 	private void OnMouseDown()
 	{
+		if (GameGridHandler.gameStateMoving)
+		{
+			return;
+		}
 		OnClickOnTile ();
 	}
 
@@ -177,6 +185,7 @@ public class TileBehaviour : MonoBehaviour
 		transform.position = pos;
 	}
 
+
 	public void UpdateTileSprite()
 	{
 		var tileSprite = getTileSprite (tileColor, tileCategory);
@@ -187,4 +196,4 @@ public class TileBehaviour : MonoBehaviour
 	{
 		return tileState == TileState.Parent;
 	}
-} 
+}
