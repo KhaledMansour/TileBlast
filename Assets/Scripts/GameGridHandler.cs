@@ -229,17 +229,7 @@ public class GameGridHandler : MonoBehaviour
 
 	private void CheckTileMatches()
 	{
-
-		for (int y = 0; y < columnItemsCount; y++)
-		{
-			for (int x = 0; x < rowItemsCount; x++)
-			{
-				if (gameBoard[x, y].tileBehaviour)
-				{
-					gameBoard[x, y].tileBehaviour.ResetTileProps ();
-				}
-			}
-		}
+		ResetTilesProps ();
 		for (int y = 0; y < columnItemsCount; y++)
 		{
 			for (int x = 0; x < rowItemsCount; x++)
@@ -251,6 +241,20 @@ public class GameGridHandler : MonoBehaviour
 			}
 		}
 
+	}
+
+	private void ResetTilesProps()
+	{
+		for (int y = 0; y < columnItemsCount; y++)
+		{
+			for (int x = 0; x < rowItemsCount; x++)
+			{
+				if (gameBoard[x, y].tileBehaviour)
+				{
+					gameBoard[x, y].tileBehaviour.ResetTileProps ();
+				}
+			}
+		}
 	}
 
 	void OnTileDestroyed(List<TileBehaviour> tiles)

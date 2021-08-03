@@ -14,13 +14,14 @@ public class TileBehaviour : MonoBehaviour
 	public TileState tileState;
 	public Vector2 parentIndex;
 	public List<TileBehaviour> childsObeservers;
-	private float movingTime = 3f;
+	private float movingTime = 5f;
 	private Action<List<TileBehaviour>> onDestoryAction;
 	private Func<TileColor, TileCategory, Sprite> getTileSprite;
 	private Action<TileBehaviour> notifyFinishMoving;
 	private Action<TileBehaviour> notifyStartMoving;
 	private IEnumerator moveEnumerable;
 	private SpriteRenderer spriteRenderer;
+	private float yScale;
 	public void InitTile(int xIndex, int yIndex, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Action<TileBehaviour> notifyStartMoving, Action<TileBehaviour> notifyFinishMoving, Func<TileColor, TileCategory, Sprite> getTileSprite)
 	{
 		this.xIndex = xIndex;
@@ -30,6 +31,7 @@ public class TileBehaviour : MonoBehaviour
 		this.notifyFinishMoving = notifyFinishMoving;
 		this.notifyStartMoving = notifyStartMoving;
 		this.getTileSprite = getTileSprite;
+		yScale = transform.localScale.y;
 		spriteRenderer = GetComponent<SpriteRenderer> ();
 		ResetTileProps ();
 	}
@@ -43,6 +45,7 @@ public class TileBehaviour : MonoBehaviour
 		{
 			StopCoroutine (moveEnumerable);
 		}
+		//notifyStartMoving (this);
 		moveEnumerable = MoveToCell (cell.cellPosition);
 		StartCoroutine (moveEnumerable);
 	}
@@ -173,18 +176,33 @@ public class TileBehaviour : MonoBehaviour
 		onDestoryAction (childsObeservers);
 	}
 
-	public IEnumerator MoveToCell(Vector3 pos)
+	private IEnumerator MoveToCell(Vector3 pos)
 	{
 		float timeElapsed = 0;
-		while (timeElapsed < movingTime)
+		var offset = pos + Vector3.down * yScale * 0.1f;
+		while (transform.position != offset)
 		{
-			transform.position = Vector3.MoveTowards (transform.position, pos, timeElapsed / movingTime);
-			timeElapsed += Time.deltaTime;
 			yield return null;
+			transform.position = Vector3.MoveTowards (transform.position, offset, timeElapsed / movingTime);
+			timeElapsed += Time.deltaTime;
+		}
+		//OnFinishMoving (tileBehaviour);
+		offset = pos + Vector3.up * transform.localScale.y * 0.1f;
+		while (transform.position != offset)
+		{
+			yield return null;
+			transform.position = Vector3.MoveTowards (transform.position, offset, timeElapsed / (movingTime*2));
+			timeElapsed += Time.deltaTime;
+		}
+		offset = pos;
+		while (transform.position != offset)
+		{
+			yield return null;
+			transform.position = Vector3.MoveTowards (transform.position, offset, timeElapsed / (movingTime * 2));
+			timeElapsed += Time.deltaTime;
 		}
 		transform.position = pos;
 	}
-
 
 	public void UpdateTileSprite()
 	{
