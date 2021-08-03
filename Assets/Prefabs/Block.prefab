@@ -98,7 +98,6 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   xIndex: 0
   yIndex: 0
-  tileItem: {fileID: 0}
   tileColor: 0
   tileCategory: 0
   matchedNeighbours: []

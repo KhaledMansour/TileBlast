@@ -14,7 +14,7 @@ public class TileBehaviour : MonoBehaviour
 	public TileState tileState;
 	public Vector2 parentIndex;
 	public List<TileBehaviour> childsObeservers;
-	private float movingTime = 5f;
+	private float movingTime = 4f;
 	private Action<List<TileBehaviour>> onDestoryAction;
 	private Func<TileColor, TileCategory, Sprite> getTileSprite;
 	private Action<TileBehaviour> notifyFinishMoving;

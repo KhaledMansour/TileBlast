@@ -77,6 +77,8 @@ public class GameGridHandler : MonoBehaviour
 	[SerializeField]
 	private int rowItemsCount;
 	[SerializeField]
+	private SpriteRenderer bg;
+	[SerializeField]
 	private List<LevelProps> levelProps;
 	[SerializeField]
 	private LevelType levelType;
@@ -84,11 +86,11 @@ public class GameGridHandler : MonoBehaviour
 	[SerializeField]
 	private Transform spawnPoint;
 	[SerializeField]
-	private float xOffsetPercentage = 40;
+	private float xOffsetPercentage;
 	[SerializeField]
-	private float yOffsetPercentage = 10;
+	private float yOffsetPercentage;
 	[SerializeField]
-	private GameObject blockPrefab;
+	private GameObject tilePrefab;
 	[SerializeField]
 	private AssetsLoader assetCategory;
 	public static BoardCell[,] gameBoard;
@@ -195,9 +197,13 @@ public class GameGridHandler : MonoBehaviour
 
 	void InitTilesGrid()
 	{
-		//screenHeight = Camera.main.orthographicSize * 2;
-		//screenWidth = screenHeight * Screen.width / Screen.height;
+		var reduceHeightPercentage = 20;
+		screenHeight = Camera.main.orthographicSize * 2;
+		screenWidth = screenHeight * Screen.width / Screen.height;
 		//screenHeight = 7;
+
+		screenHeight -= (screenHeight * reduceHeightPercentage) / 100;
+		bg.size = new Vector2 (screenWidth, screenHeight);
 		gameBoard = new BoardCell[rowItemsCount, columnItemsCount];
 		var xItemSize = screenWidth / (rowItemsCount + (rowItemsCount + 1) / xOffsetPercentage);
 		var yItemSize = screenHeight / (columnItemsCount + (columnItemsCount + 1) / yOffsetPercentage);
@@ -321,7 +327,7 @@ public class GameGridHandler : MonoBehaviour
 	{
 		var randomTileRef = assetCategory.GetRandomTile ();
 		var tileDefaultSprite = randomTileRef.tileMaps.FirstOrDefault (x => x.tileCategory == TileCategory.Default).tileSprite;
-		var tileObject = Instantiate (blockPrefab, this.transform);
+		var tileObject = Instantiate (tilePrefab, this.transform);
 		tileObject.transform.localScale = tileScale;
 		tileObject.transform.position = pos;
 		var tile = tileObject.GetComponent<TileBehaviour> ();
