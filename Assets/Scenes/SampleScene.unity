@@ -297,7 +297,6 @@ MonoBehaviour:
   yOffsetPercentage: 40
   tilePrefab: {fileID: 1893394054500374816, guid: 005dad584b6c73f49822fbaba24c12f1, type: 3}
   assetCategory: {fileID: 11400000, guid: 50616d1f0159ab74eaa179274624ae7a, type: 2}
-  currentMovingTilesObservers: []
 --- !u!4 &147712465
 Transform:
   m_ObjectHideFlags: 0

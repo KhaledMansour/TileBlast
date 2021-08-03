@@ -12,24 +12,20 @@ public class TileBehaviour : MonoBehaviour
 	public List<TileBehaviour> matchedNeighbours;
 	public bool isVisited;
 	public TileState tileState;
-	public Vector2 parentIndex;
+	public ItemIndex parentIndex;
 	public List<TileBehaviour> childsObeservers;
 	private float movingTime = 4f;
 	private Action<List<TileBehaviour>> onDestoryAction;
 	private Func<TileColor, TileCategory, Sprite> getTileSprite;
-	private Action<TileBehaviour> notifyFinishMoving;
-	private Action<TileBehaviour> notifyStartMoving;
 	private IEnumerator moveEnumerable;
 	private SpriteRenderer spriteRenderer;
 	private float yScale;
-	public void InitTile(int xIndex, int yIndex, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Action<TileBehaviour> notifyStartMoving, Action<TileBehaviour> notifyFinishMoving, Func<TileColor, TileCategory, Sprite> getTileSprite)
+	public void InitTile(int xIndex, int yIndex, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Func<TileColor, TileCategory, Sprite> getTileSprite)
 	{
 		this.xIndex = xIndex;
 		this.yIndex = yIndex;
 		this.tileColor = tileColor;
 		this.onDestoryAction = onDestoryAction;
-		this.notifyFinishMoving = notifyFinishMoving;
-		this.notifyStartMoving = notifyStartMoving;
 		this.getTileSprite = getTileSprite;
 		yScale = transform.localScale.y;
 		spriteRenderer = GetComponent<SpriteRenderer> ();
@@ -45,7 +41,6 @@ public class TileBehaviour : MonoBehaviour
 		{
 			StopCoroutine (moveEnumerable);
 		}
-		//notifyStartMoving (this);
 		moveEnumerable = MoveToCell (cell.cellPosition);
 		StartCoroutine (moveEnumerable);
 	}
@@ -53,7 +48,7 @@ public class TileBehaviour : MonoBehaviour
 	public void ResetTileProps()
 	{
 		tileState = TileState.None;
-		parentIndex = new Vector2 (-1, -1);
+		parentIndex = new ItemIndex (-1, -1);
 		isVisited = false;
 		UpdateTileCategory (TileCategory.Default);
 		matchedNeighbours.Clear ();
@@ -70,7 +65,7 @@ public class TileBehaviour : MonoBehaviour
 		var neighboursIndexes = GetNeighboursIndexes ();
 		foreach (var item in neighboursIndexes)
 		{
-			var cell = GameGridHandler.gameBoard[(int)item.x, (int)item.y];
+			var cell = GameGridHandler.gameBoard[item.x, item.y];
 			if (!cell.tileBehaviour)
 			{
 				continue;
@@ -85,7 +80,7 @@ public class TileBehaviour : MonoBehaviour
 				if (tileState == TileState.Parent)
 				{
 					tileElement.tileState = TileState.Child;
-					tileElement.parentIndex = new Vector2 (xIndex, yIndex);
+					tileElement.parentIndex = new ItemIndex (xIndex, yIndex);
 					if (!childsObeservers.Contains (tileElement))
 					{
 						childsObeservers.Add (tileElement);
@@ -95,8 +90,8 @@ public class TileBehaviour : MonoBehaviour
 				else if (tileState != TileState.Parent)
 				{
 					tileElement.tileState = TileState.Child;
-					tileElement.parentIndex = new Vector2 (parentIndex.x, parentIndex.y);
-					var parentCell = GameGridHandler.gameBoard[(int)parentIndex.x, (int)parentIndex.y];
+					tileElement.parentIndex = new ItemIndex (parentIndex.x, parentIndex.y);
+					var parentCell = GameGridHandler.gameBoard[parentIndex.x, parentIndex.y];
 					var parentTile = parentCell.tileBehaviour;
 					if (!parentTile.childsObeservers.Contains (this))
 					{
@@ -125,34 +120,30 @@ public class TileBehaviour : MonoBehaviour
 		UpdateTileSprite ();
 	}
 
-	public List<Vector2> GetNeighboursIndexes()
+	public List<ItemIndex> GetNeighboursIndexes()
 	{
-		var result = new List<Vector2> ();
+		var result = new List<ItemIndex> ();
 		if (xIndex > 0)
 		{
-			result.Add (new Vector2 (xIndex - 1, yIndex));
+			result.Add (new ItemIndex (xIndex - 1, yIndex));
 		}
 		if (xIndex < GameGridHandler.currentLevelProps.rowItemsCount - 1)
 		{
-			result.Add (new Vector2 (xIndex + 1, yIndex));
+			result.Add (new ItemIndex (xIndex + 1, yIndex));
 		}
 		if (yIndex > 0)
 		{
-			result.Add (new Vector2 (xIndex, yIndex - 1));
+			result.Add (new ItemIndex (xIndex, yIndex - 1));
 		}
 		if (yIndex < GameGridHandler.currentLevelProps.columnItemsCount - 1)
 		{
-			result.Add (new Vector2 (xIndex, yIndex + 1));
+			result.Add (new ItemIndex (xIndex, yIndex + 1));
 		}
 		return result;
 	}
 
 	private void OnMouseDown()
 	{
-		if (GameGridHandler.gameStateMoving)
-		{
-			return;
-		}
 		OnClickOnTile ();
 	}
 
@@ -160,7 +151,7 @@ public class TileBehaviour : MonoBehaviour
 	{
 		if (tileState == TileState.Child)
 		{
-			var cell = GameGridHandler.gameBoard[(int)parentIndex.x, (int)parentIndex.y];
+			var cell = GameGridHandler.gameBoard[parentIndex.x, parentIndex.y];
 			var parentTile = cell.tileBehaviour;
 			parentTile.NotifyParentToDestroy ();
 		}
@@ -186,7 +177,6 @@ public class TileBehaviour : MonoBehaviour
 			transform.position = Vector3.MoveTowards (transform.position, offset, timeElapsed / movingTime);
 			timeElapsed += Time.deltaTime;
 		}
-		//OnFinishMoving (tileBehaviour);
 		offset = pos + Vector3.up * transform.localScale.y * 0.1f;
 		while (transform.position != offset)
 		{

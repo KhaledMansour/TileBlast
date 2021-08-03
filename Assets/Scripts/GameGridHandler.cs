@@ -1,71 +1,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
-
-public enum TileState
-{
-	None, Child, Parent
-}
-
-public class BoardCell
-{
-	public TileBehaviour tileBehaviour;
-	public int xIndex;
-	public int yIndex;
-	public Vector2 cellPosition;
-	public BoardCell(TileBehaviour tileBehaviour, int xIndex, int yIndex, Vector2 cellPosition)
-	{
-		this.tileBehaviour = tileBehaviour;
-		this.xIndex = xIndex;
-		this.yIndex = yIndex;
-		this.cellPosition = cellPosition;
-	}
-
-	public void UpdateCellTile(TileBehaviour tileBehaviour)
-	{
-		this.tileBehaviour = tileBehaviour;
-	}
-}
-[System.Serializable]
-public enum LevelType
-{
-	Example1, Example2, ShuffleTest
-}
-[System.Serializable]
-public class LevelProps
-{
-	public LevelType levelType;
-	public int columnItemsCount;
-	public int rowItemsCount;
-	[Range (1, 6)]
-	public int maxColorsCount;
-	[SerializeField]
-	private int GroupAStartLimit;
-	[SerializeField]
-	private int GroupBStartLimit;
-	[SerializeField]
-	private int GroupCStartLimit;
-	public TileCategory GetTileCategory(int matchesCount)
-	{
-		if (matchesCount < GroupAStartLimit)
-		{
-			return TileCategory.Default;
-		}
-		else if (matchesCount >= GroupAStartLimit && matchesCount < GroupBStartLimit)
-		{
-			return TileCategory.GroupA;
-		}
-		else if (matchesCount >= GroupBStartLimit && matchesCount < GroupCStartLimit)
-		{
-			return TileCategory.GroupB;
-		}
-		else
-		{
-			return TileCategory.GroupC;
-		}
-	}
-}
-
 public class GameGridHandler : MonoBehaviour
 {
 	[SerializeField]
@@ -96,13 +31,9 @@ public class GameGridHandler : MonoBehaviour
 	public static BoardCell[,] gameBoard;
 	private Vector3 tileScale;
 	private Dictionary<TileColor, List<TileBehaviour>> tilesColorsDict;
-	[SerializeField]
-	private List<TileBehaviour> currentMovingTilesObservers;
-	public static bool gameStateMoving { get;private set; }
 
 	void Awake()
 	{
-		//currentMovingTilesObservers = new List<TileBehaviour> ();
 		currentLevelProps = levelProps.First (x => x.levelType == levelType);
 		columnItemsCount = currentLevelProps.columnItemsCount;
 		rowItemsCount = currentLevelProps.rowItemsCount;
@@ -144,7 +75,6 @@ public class GameGridHandler : MonoBehaviour
 		}
 		if (Input.GetKeyDown (KeyCode.S))
 		{
-			//Debug.LogError ("need shuffle" + CheckNeedShuffle ());
 			ShuffleBehaviour ();
 		}
 	}
@@ -175,9 +105,9 @@ public class GameGridHandler : MonoBehaviour
 			if (colorTiles.Value.Count > 1)
 			{
 				var tileNeighbourIndex = colorTiles.Value[0].GetNeighboursIndexes ()[0];
-				var neighbourCell = gameBoard[(int)tileNeighbourIndex.x, (int)tileNeighbourIndex.y];
+				var neighbourCell = gameBoard[tileNeighbourIndex.x, tileNeighbourIndex.y];
 				var targetTile = colorTiles.Value[1];
-				var targetCell = gameBoard[(int)targetTile.xIndex, (int)targetTile.yIndex];
+				var targetCell = gameBoard[targetTile.xIndex, targetTile.yIndex];
 				SwapCellsTile (neighbourCell, targetCell);
 			}
 		}
@@ -200,8 +130,6 @@ public class GameGridHandler : MonoBehaviour
 		var reduceHeightPercentage = 20;
 		screenHeight = Camera.main.orthographicSize * 2;
 		screenWidth = screenHeight * Screen.width / Screen.height;
-		//screenHeight = 7;
-
 		screenHeight -= (screenHeight * reduceHeightPercentage) / 100;
 		bg.size = new Vector2 (screenWidth, screenHeight);
 		gameBoard = new BoardCell[rowItemsCount, columnItemsCount];
@@ -331,34 +259,9 @@ public class GameGridHandler : MonoBehaviour
 		tileObject.transform.localScale = tileScale;
 		tileObject.transform.position = pos;
 		var tile = tileObject.GetComponent<TileBehaviour> ();
-		tile.InitTile (cellXIndex, cellYIndex, randomTileRef.tileColor, OnTileDestroyed, AddChildMovingObserver, RemoveChildMovingObserver, assetCategory.GetTileSprite);
+		tile.InitTile (cellXIndex, cellYIndex, randomTileRef.tileColor, OnTileDestroyed, assetCategory.GetTileSprite);
 		tileObject.name = randomTileRef.tileColor.ToString () + cellXIndex + "" + cellYIndex;
 		AddTileToDict (tile);
 		return tile;
 	}
-
-	private void AddChildMovingObserver(TileBehaviour tileObserver)
-	{
-		if (!currentMovingTilesObservers.Contains (tileObserver))
-		{
-			gameStateMoving = true;
-			currentMovingTilesObservers.Add (tileObserver);
-		}
-	}
-
-	private void RemoveChildMovingObserver(TileBehaviour tileBehaviour)
-	{
-		currentMovingTilesObservers.Remove (tileBehaviour);
-		Debug.LogError (currentMovingTilesObservers.Count);
-		if (currentMovingTilesObservers.Count == 0)
-		{
-			gameStateMoving = false;
-			Debug.LogError ("check shuffle");
-			if (CheckNeedShuffle ())
-			{
-				ShuffleBehaviour ();
-			}
-		}
-	}
-
 }
