@@ -29,13 +29,15 @@ public class GameGridHandler : MonoBehaviour
 	[SerializeField]
 	private AssetsLoader assetCategory;
 	public static BoardCell[,] gameBoard;
-	public static GameState gameState { get;private set; }
+	public static GameState gameState { get; private set; }
 	private TileBehaviour lastSpawnedTile;
 	private Vector3 tileScale;
 	private Dictionary<TileColor, List<TileBehaviour>> tilesColorsDict;
+	private Stack<TileBehaviour> tilePool;
 
 	void Awake()
 	{
+		tilePool = new Stack<TileBehaviour> ();
 		currentLevelProps = levelProps.First (x => x.levelType == levelType);
 		columnItemsCount = currentLevelProps.columnItemsCount;
 		rowItemsCount = currentLevelProps.rowItemsCount;
@@ -87,9 +89,9 @@ public class GameGridHandler : MonoBehaviour
 		{
 			for (int x = 0; x < rowItemsCount; x++)
 			{
-				if (gameBoard[x, y].tileBehaviour)
+				if (gameBoard[x, y].tileReference)
 				{
-					if (gameBoard[x, y].tileBehaviour.IfParentTile ())
+					if (gameBoard[x, y].tileReference.IfParentTile ())
 					{
 						return false;
 					}
@@ -118,13 +120,13 @@ public class GameGridHandler : MonoBehaviour
 
 	private void SwapCellsTile(BoardCell cell1, BoardCell cell2)
 	{
-		var tile1 = cell1.tileBehaviour;
-		var tile2 = cell2.tileBehaviour;
+		var tile1 = cell1.tileReference;
+		var tile2 = cell2.tileReference;
 		var tile1Temp = tile1;
-		cell2.tileBehaviour = tile1Temp;
-		cell1.tileBehaviour = tile2;
-		tile2.InitTile (cell1);
-		tile1.InitTile (cell2);
+		cell2.tileReference = tile1Temp;
+		cell1.tileReference = tile2;
+		tile2.MoveTileToCell (cell1);
+		tile1.MoveTileToCell (cell2);
 	}
 
 	void InitTilesGrid()
@@ -134,7 +136,6 @@ public class GameGridHandler : MonoBehaviour
 		screenHeight = Camera.main.orthographicSize * 2;
 		screenWidth = screenHeight * Screen.width / Screen.height;
 		screenHeight -= (screenHeight * reduceHeightPercentage) / 100;
-		//screenHeight = screenWidth;
 		bg.size = new Vector2 (screenWidth, screenHeight);
 		gameBoard = new BoardCell[rowItemsCount, columnItemsCount];
 		var xItemSize = screenWidth / (rowItemsCount + (rowItemsCount + 1) / xOffsetPercentage);
@@ -151,12 +152,10 @@ public class GameGridHandler : MonoBehaviour
 				var cellXPos = (x * xItemSize + x * (xItemSize / xOffsetPercentage) + startXPos);
 				var cellYPos = (y * yItemSize + y * (yItemSize / yOffsetPercentage) + startYPos);
 				var tilePos = new Vector3 (cellXPos, spawnPoint.localPosition.y + tileScale.y * y, 0);
-
-				var tile = SpawnRandomTile (tilePos, x, y);
-				lastSpawnedTile = tile;
-				var cell = new BoardCell (tile, x, y, new Vector2 (cellXPos, cellYPos));
+				var cell = new BoardCell (null, x, y, new Vector2 (cellXPos, cellYPos));
 				gameBoard[x, y] = cell;
-				tile.InitTile (cell);
+				var tile = SpawnRandomTile (tilePos, cell);
+				lastSpawnedTile = tile;
 			}
 		}
 		lastSpawnedTile.NotifyFinishMoving (OnLastTileFinishMoving);
@@ -169,9 +168,9 @@ public class GameGridHandler : MonoBehaviour
 		{
 			for (int x = 0; x < rowItemsCount; x++)
 			{
-				if (gameBoard[x, y].tileBehaviour)
+				if (gameBoard[x, y].tileReference)
 				{
-					gameBoard[x, y].tileBehaviour.CheckNeighboursMatches ();
+					gameBoard[x, y].tileReference.CheckNeighboursMatches ();
 				}
 			}
 		}
@@ -184,9 +183,9 @@ public class GameGridHandler : MonoBehaviour
 		{
 			for (int x = 0; x < rowItemsCount; x++)
 			{
-				if (gameBoard[x, y].tileBehaviour)
+				if (gameBoard[x, y].tileReference)
 				{
-					gameBoard[x, y].tileBehaviour.ResetTileProps ();
+					gameBoard[x, y].tileReference.ResetTileProps ();
 				}
 			}
 		}
@@ -198,42 +197,42 @@ public class GameGridHandler : MonoBehaviour
 		gameState = GameState.Moving;
 		foreach (var tile in tiles)
 		{
+			TileBehaviour destroyedTile;
 			var destroyedTileCell = gameBoard[tile.xIndex, tile.yIndex];
-			RemoveTileFromDict (destroyedTileCell.tileBehaviour);
-			Destroy (destroyedTileCell.tileBehaviour.gameObject);
+			RemoveTileFromDict (destroyedTileCell.tileReference);
+			destroyedTile = destroyedTileCell.tileReference;
+			AddTileToPool (destroyedTile);
+			destroyedTile.gameObject.SetActive (false);
+			destroyedTile.OnPushInPool ();
+			destroyedTileCell.tileReference = null;
 			if (!destroyedItemsRow.Contains (destroyedTileCell.xIndex))
 			{
 				destroyedItemsRow.Add (destroyedTileCell.xIndex);
 			}
-			destroyedTileCell.tileBehaviour = null;
 			for (int y = destroyedTileCell.yIndex + 1; y < columnItemsCount; y++)
 			{
 				var upperCell = gameBoard[destroyedTileCell.xIndex, y];
-				if (upperCell.tileBehaviour != null)
+				if (upperCell.tileReference && upperCell.tileReference.gameObject.activeSelf)
 				{
 					for (int height = 0; height < y; height++)
 					{
 						var lowercell = gameBoard[destroyedTileCell.xIndex, height];
-						if (lowercell.tileBehaviour == null)
+						if (!lowercell.tileReference || !lowercell.tileReference.gameObject.activeSelf)
 						{
-							lowercell.tileBehaviour = upperCell.tileBehaviour;
-							upperCell.tileBehaviour = null;
-							lowercell.tileBehaviour.InitTile (lowercell);
+							lowercell.tileReference = upperCell.tileReference;
+							upperCell.tileReference = null;
+							lowercell.tileReference.MoveTileToCell (lowercell);
 						}
 					}
 				}
 			}
 		}
 		SpawnTilesToFillEmptyCells (destroyedItemsRow);
-		//CheckTileMatches ();
-		//if (CheckNeedShuffle ())
-		//{
-		//	ShuffleBehaviour ();
-		//}
 	}
 
 	private void SpawnTilesToFillEmptyCells(List<int> destroyedItemsRow)
 	{
+
 		for (int i = 0; i < destroyedItemsRow.Count; i++)
 		{
 			var rowIndex = destroyedItemsRow[i];
@@ -241,30 +240,29 @@ public class GameGridHandler : MonoBehaviour
 			for (int y = 0; y < columnItemsCount; y++)
 			{
 				var cell = gameBoard[rowIndex, y];
-				if (!cell.tileBehaviour)
+				if (cell.tileReference == null || !cell.tileReference.gameObject.activeSelf)
 				{
 					numberOfSpawnsInColumn++;
 					var tilePos = new Vector3 (cell.cellPosition.x, spawnPoint.localPosition.y + tileScale.y * numberOfSpawnsInColumn, 0);
-					var tile = SpawnRandomTile (tilePos, cell.xIndex, cell.yIndex);
+					var tile = SpawnRandomTile (tilePos, cell);
+					cell.tileReference = tile;
 					lastSpawnedTile = tile;
-					tile.InitTile (cell);
-					cell.tileBehaviour = tile;
 				}
 			}
 		}
-		lastSpawnedTile.NotifyFinishMoving(OnLastTileFinishMoving);
+		lastSpawnedTile.NotifyFinishMoving (OnLastTileFinishMoving);
 	}
 
-	private TileBehaviour SpawnRandomTile(Vector3 pos, int cellXIndex, int cellYIndex)
+	private TileBehaviour SpawnRandomTile(Vector3 pos, BoardCell cell)
 	{
 		var randomTileRef = assetCategory.GetRandomTile ();
 		var tileDefaultSprite = randomTileRef.tileMaps.FirstOrDefault (x => x.tileCategory == TileCategory.Default).tileSprite;
-		var tileObject = Instantiate (tilePrefab, this.transform);
-		tileObject.transform.localScale = tileScale;
-		tileObject.transform.position = pos;
-		var tile = tileObject.GetComponent<TileBehaviour> ();
-		tile.InitTile (cellXIndex, cellYIndex, randomTileRef.tileColor, OnTileDestroyed, assetCategory.GetTileSprite);
-		tileObject.name = randomTileRef.tileColor.ToString () + cellXIndex + "" + cellYIndex;
+		var tile = GetTileFromPool ();
+		tile.transform.position = pos;
+		cell.tileReference = tile;
+		tile.InitTile (cell.xIndex, cell.yIndex, randomTileRef.tileColor, OnTileDestroyed, assetCategory.GetTileSprite);
+		tile.MoveTileToCell (cell);
+		tile.name = randomTileRef.tileColor.ToString () + cell.xIndex + "" + cell.yIndex;
 		AddTileToDict (tile);
 		return tile;
 	}
@@ -277,5 +275,29 @@ public class GameGridHandler : MonoBehaviour
 			ShuffleBehaviour ();
 		}
 		gameState = GameState.Idle;
+	}
+
+	private void AddTileToPool(TileBehaviour tile = null)
+	{
+		var addedTile = tile;
+		if (addedTile == null)
+		{
+			var tileObject = Instantiate (tilePrefab, this.transform);
+			tileObject.transform.localScale = tileScale;
+			addedTile = tileObject.GetComponent<TileBehaviour> ();
+		}
+
+		tilePool.Push (addedTile);
+	}
+
+	private TileBehaviour GetTileFromPool()
+	{
+		if (tilePool.Count == 0)
+		{
+			AddTileToPool ();
+		}
+		var tile = tilePool.Pop ();
+		tile.gameObject.SetActive (true);
+		return tile;
 	}
 }
