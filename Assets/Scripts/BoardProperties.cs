@@ -6,6 +6,11 @@ public enum TileState
 {
 	None, Child, Parent
 }
+
+public enum GameState
+{
+	Idle, Moving
+}
 public struct ItemIndex
 {
 	public int x;

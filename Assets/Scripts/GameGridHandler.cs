@@ -29,6 +29,8 @@ public class GameGridHandler : MonoBehaviour
 	[SerializeField]
 	private AssetsLoader assetCategory;
 	public static BoardCell[,] gameBoard;
+	public static GameState gameState { get;private set; }
+	private TileBehaviour lastSpawnedTile;
 	private Vector3 tileScale;
 	private Dictionary<TileColor, List<TileBehaviour>> tilesColorsDict;
 
@@ -127,10 +129,12 @@ public class GameGridHandler : MonoBehaviour
 
 	void InitTilesGrid()
 	{
+		gameState = GameState.Moving;
 		var reduceHeightPercentage = 20;
 		screenHeight = Camera.main.orthographicSize * 2;
 		screenWidth = screenHeight * Screen.width / Screen.height;
 		screenHeight -= (screenHeight * reduceHeightPercentage) / 100;
+		//screenHeight = screenWidth;
 		bg.size = new Vector2 (screenWidth, screenHeight);
 		gameBoard = new BoardCell[rowItemsCount, columnItemsCount];
 		var xItemSize = screenWidth / (rowItemsCount + (rowItemsCount + 1) / xOffsetPercentage);
@@ -149,16 +153,13 @@ public class GameGridHandler : MonoBehaviour
 				var tilePos = new Vector3 (cellXPos, spawnPoint.localPosition.y + tileScale.y * y, 0);
 
 				var tile = SpawnRandomTile (tilePos, x, y);
+				lastSpawnedTile = tile;
 				var cell = new BoardCell (tile, x, y, new Vector2 (cellXPos, cellYPos));
 				gameBoard[x, y] = cell;
 				tile.InitTile (cell);
 			}
 		}
-		CheckTileMatches ();
-		if (CheckNeedShuffle ())
-		{
-			ShuffleBehaviour ();
-		}
+		lastSpawnedTile.NotifyFinishMoving (OnLastTileFinishMoving);
 	}
 
 	private void CheckTileMatches()
@@ -194,6 +195,7 @@ public class GameGridHandler : MonoBehaviour
 	void OnTileDestroyed(List<TileBehaviour> tiles)
 	{
 		var destroyedItemsRow = new List<int> ();
+		gameState = GameState.Moving;
 		foreach (var tile in tiles)
 		{
 			var destroyedTileCell = gameBoard[tile.xIndex, tile.yIndex];
@@ -223,11 +225,11 @@ public class GameGridHandler : MonoBehaviour
 			}
 		}
 		SpawnTilesToFillEmptyCells (destroyedItemsRow);
-		CheckTileMatches ();
-		if (CheckNeedShuffle ())
-		{
-			ShuffleBehaviour ();
-		}
+		//CheckTileMatches ();
+		//if (CheckNeedShuffle ())
+		//{
+		//	ShuffleBehaviour ();
+		//}
 	}
 
 	private void SpawnTilesToFillEmptyCells(List<int> destroyedItemsRow)
@@ -244,11 +246,13 @@ public class GameGridHandler : MonoBehaviour
 					numberOfSpawnsInColumn++;
 					var tilePos = new Vector3 (cell.cellPosition.x, spawnPoint.localPosition.y + tileScale.y * numberOfSpawnsInColumn, 0);
 					var tile = SpawnRandomTile (tilePos, cell.xIndex, cell.yIndex);
+					lastSpawnedTile = tile;
 					tile.InitTile (cell);
 					cell.tileBehaviour = tile;
 				}
 			}
 		}
+		lastSpawnedTile.NotifyFinishMoving(OnLastTileFinishMoving);
 	}
 
 	private TileBehaviour SpawnRandomTile(Vector3 pos, int cellXIndex, int cellYIndex)
@@ -263,5 +267,15 @@ public class GameGridHandler : MonoBehaviour
 		tileObject.name = randomTileRef.tileColor.ToString () + cellXIndex + "" + cellYIndex;
 		AddTileToDict (tile);
 		return tile;
+	}
+
+	private void OnLastTileFinishMoving()
+	{
+		CheckTileMatches ();
+		if (CheckNeedShuffle ())
+		{
+			ShuffleBehaviour ();
+		}
+		gameState = GameState.Idle;
 	}
 }

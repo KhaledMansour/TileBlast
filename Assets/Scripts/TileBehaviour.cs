@@ -14,12 +14,13 @@ public class TileBehaviour : MonoBehaviour
 	public TileState tileState;
 	public ItemIndex parentIndex;
 	public List<TileBehaviour> childsObeservers;
-	private float movingTime = 4f;
+	private float movingTime = 3f;
 	private Action<List<TileBehaviour>> onDestoryAction;
 	private Func<TileColor, TileCategory, Sprite> getTileSprite;
 	private IEnumerator moveEnumerable;
 	private SpriteRenderer spriteRenderer;
 	private float yScale;
+	private Action onFinishMoving;
 	public void InitTile(int xIndex, int yIndex, TileColor tileColor, Action<List<TileBehaviour>> onDestoryAction, Func<TileColor, TileCategory, Sprite> getTileSprite)
 	{
 		this.xIndex = xIndex;
@@ -144,6 +145,10 @@ public class TileBehaviour : MonoBehaviour
 
 	private void OnMouseDown()
 	{
+		if (GameGridHandler.gameState == GameState.Moving)
+		{
+			return;
+		}
 		OnClickOnTile ();
 	}
 
@@ -170,28 +175,33 @@ public class TileBehaviour : MonoBehaviour
 	private IEnumerator MoveToCell(Vector3 pos)
 	{
 		float timeElapsed = 0;
-		var offset = pos + Vector3.down * yScale * 0.1f;
-		while (transform.position != offset)
+		var tilePos = pos + Vector3.down * yScale * 0.2f;
+		while (transform.position != tilePos)
 		{
 			yield return null;
-			transform.position = Vector3.MoveTowards (transform.position, offset, timeElapsed / movingTime);
+			transform.position = Vector3.MoveTowards (transform.position, tilePos, timeElapsed / movingTime);
 			timeElapsed += Time.deltaTime;
 		}
-		offset = pos + Vector3.up * transform.localScale.y * 0.1f;
-		while (transform.position != offset)
+		tilePos = pos + Vector3.up * transform.localScale.y * 0.1f;
+		while (transform.position != tilePos)
 		{
 			yield return null;
-			transform.position = Vector3.MoveTowards (transform.position, offset, timeElapsed / (movingTime*2));
+			transform.position = Vector3.MoveTowards (transform.position, tilePos, timeElapsed / (movingTime*2));
 			timeElapsed += Time.deltaTime;
 		}
-		offset = pos;
-		while (transform.position != offset)
+		tilePos = pos;
+		while (transform.position != tilePos)
 		{
 			yield return null;
-			transform.position = Vector3.MoveTowards (transform.position, offset, timeElapsed / (movingTime * 2));
+			transform.position = Vector3.MoveTowards (transform.position, tilePos, timeElapsed / (movingTime * 2));
 			timeElapsed += Time.deltaTime;
 		}
 		transform.position = pos;
+		if (onFinishMoving != null)
+		{
+			onFinishMoving ();
+			onFinishMoving = null;
+		}
 	}
 
 	public void UpdateTileSprite()
@@ -203,5 +213,10 @@ public class TileBehaviour : MonoBehaviour
 	public bool IfParentTile()
 	{
 		return tileState == TileState.Parent;
+	}
+
+	public void NotifyFinishMoving(Action finishMoving)
+	{
+		onFinishMoving = finishMoving;
 	}
 }
