@@ -132,10 +132,6 @@ public class GameGridHandler : MonoBehaviour
 	void InitTilesGrid()
 	{
 		gameState = GameState.Moving;
-		var reduceHeightPercentage = 20;
-		screenHeight = Camera.main.orthographicSize * 2;
-		screenWidth = screenHeight * Screen.width / Screen.height;
-		screenHeight -= (screenHeight * reduceHeightPercentage) / 100;
 		bg.size = new Vector2 (screenWidth, screenHeight);
 		gameBoard = new BoardCell[rowItemsCount, columnItemsCount];
 		var xItemSize = screenWidth / (rowItemsCount + (rowItemsCount + 1) / xOffsetPercentage);

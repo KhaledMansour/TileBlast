@@ -265,7 +265,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   screenWidth: 5.6
-  screenHeight: 7.5
+  screenHeight: 8
   columnItemsCount: 0
   rowItemsCount: 0
   bg: {fileID: 1881244676}
@@ -291,7 +291,7 @@ MonoBehaviour:
     GroupAStartLimit: 5
     GroupBStartLimit: 7
     GroupCStartLimit: 9
-  levelType: 2
+  levelType: 0
   spawnPoint: {fileID: 76926067}
   xOffsetPercentage: 30
   yOffsetPercentage: 40
