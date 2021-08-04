@@ -1,7 +1,6 @@
-using System.Collections;
 using System.Collections.Generic;
-using UnityEngine;
 using System.Linq;
+using UnityEngine;
 
 [System.Serializable]
 public enum TileColor { Blue, Green, Pink, Purple, Red, Yellow };
@@ -27,13 +26,14 @@ public class AssetsLoader : ScriptableObject
 {
 	public List<TilesMapping> tilesMappings;
 
-	public  Sprite GetTileSprite(TileColor tileColor, TileCategory tileCategory)
+	public Sprite GetTileSprite(TileColor tileColor, TileCategory tileCategory)
 	{
 		var tileAsset = tilesMappings.FirstOrDefault (x => x.tileColor == tileColor);
-		if (tileAsset !=null)
+		if (tileAsset != null)
 		{
 			return tileAsset.tileMaps.FirstOrDefault (x => x.tileCategory == tileCategory).tileSprite;
-		} else
+		}
+		else
 		{
 			Debug.LogError ("Error cant get asset check !!!!");
 			return null;

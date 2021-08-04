@@ -1,5 +1,3 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
 public enum TileState
@@ -24,13 +22,13 @@ public struct ItemIndex
 
 public class BoardCell
 {
-	public TileBehaviour tileBehaviour;
+	public TileBehaviour tileReference;
 	public int xIndex;
 	public int yIndex;
 	public Vector2 cellPosition;
 	public BoardCell(TileBehaviour tileBehaviour, int xIndex, int yIndex, Vector2 cellPosition)
 	{
-		this.tileBehaviour = tileBehaviour;
+		this.tileReference = tileBehaviour;
 		this.xIndex = xIndex;
 		this.yIndex = yIndex;
 		this.cellPosition = cellPosition;
@@ -38,7 +36,7 @@ public class BoardCell
 
 	public void UpdateCellTile(TileBehaviour tileBehaviour)
 	{
-		this.tileBehaviour = tileBehaviour;
+		this.tileReference = tileBehaviour;
 	}
 }
 [System.Serializable]

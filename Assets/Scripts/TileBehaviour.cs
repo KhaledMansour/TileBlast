@@ -14,7 +14,7 @@ public class TileBehaviour : MonoBehaviour
 	public TileState tileState;
 	public ItemIndex parentIndex;
 	public List<TileBehaviour> childsObeservers;
-	private float movingTime = 3f;
+	private float movingTime = 2f;
 	private Action<List<TileBehaviour>> onDestoryAction;
 	private Func<TileColor, TileCategory, Sprite> getTileSprite;
 	private IEnumerator moveEnumerable;
@@ -33,7 +33,7 @@ public class TileBehaviour : MonoBehaviour
 		ResetTileProps ();
 	}
 
-	public void InitTile(BoardCell cell)
+	public void MoveTileToCell(BoardCell cell)
 	{
 		this.xIndex = cell.xIndex;
 		this.yIndex = cell.yIndex;
@@ -67,11 +67,11 @@ public class TileBehaviour : MonoBehaviour
 		foreach (var item in neighboursIndexes)
 		{
 			var cell = GameGridHandler.gameBoard[item.x, item.y];
-			if (!cell.tileBehaviour)
+			if (!cell.tileReference)
 			{
 				continue;
 			}
-			var tileElement = cell.tileBehaviour;
+			var tileElement = cell.tileReference;
 			if (tileElement.tileColor == tileColor && tileElement.tileState != TileState.Parent)
 			{
 				if (tileState == TileState.None && !isVisited)
@@ -93,7 +93,7 @@ public class TileBehaviour : MonoBehaviour
 					tileElement.tileState = TileState.Child;
 					tileElement.parentIndex = new ItemIndex (parentIndex.x, parentIndex.y);
 					var parentCell = GameGridHandler.gameBoard[parentIndex.x, parentIndex.y];
-					var parentTile = parentCell.tileBehaviour;
+					var parentTile = parentCell.tileReference;
 					if (!parentTile.childsObeservers.Contains (this))
 					{
 						parentTile.childsObeservers.Add (this);
@@ -157,7 +157,7 @@ public class TileBehaviour : MonoBehaviour
 		if (tileState == TileState.Child)
 		{
 			var cell = GameGridHandler.gameBoard[parentIndex.x, parentIndex.y];
-			var parentTile = cell.tileBehaviour;
+			var parentTile = cell.tileReference;
 			parentTile.NotifyParentToDestroy ();
 		}
 		else if (tileState == TileState.Parent)
@@ -186,7 +186,7 @@ public class TileBehaviour : MonoBehaviour
 		while (transform.position != tilePos)
 		{
 			yield return null;
-			transform.position = Vector3.MoveTowards (transform.position, tilePos, timeElapsed / (movingTime*2));
+			transform.position = Vector3.MoveTowards (transform.position, tilePos, timeElapsed / (movingTime * 2));
 			timeElapsed += Time.deltaTime;
 		}
 		tilePos = pos;
@@ -206,6 +206,10 @@ public class TileBehaviour : MonoBehaviour
 
 	public void UpdateTileSprite()
 	{
+		if (getTileSprite == null)
+		{
+			return;
+		}
 		var tileSprite = getTileSprite (tileColor, tileCategory);
 		spriteRenderer.sprite = tileSprite;
 	}
@@ -218,5 +222,14 @@ public class TileBehaviour : MonoBehaviour
 	public void NotifyFinishMoving(Action finishMoving)
 	{
 		onFinishMoving = finishMoving;
+	}
+
+	public void OnPushInPool()
+	{
+		if (moveEnumerable != null)
+		{
+			StopCoroutine (moveEnumerable);
+			moveEnumerable = null;
+		}
 	}
 }
